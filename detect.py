@@ -225,7 +225,7 @@ img_path    = "C:/Users/tirth/Desktop/manga_text_ocr-main/ie-wo-oidasaremashita-
 res_img     = './res.bmp'
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model = EAST()
-model.load_state_dict(torch.load(os.path.join(os.getcwd(),'east.pt'),weights_only=False,map_location=device))
+model.load_state_dict(torch.load(os.path.join(os.getcwd(),'east.pth'),weights_only=False,map_location=device))
 model.eval().to(device)
 img = Image.open(img_path)
 

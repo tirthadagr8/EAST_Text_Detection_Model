@@ -22,7 +22,7 @@ def train(metadata,vocab,char_to_int,int_to_char, pths_path, batch_size, lr, epo
 	criterion = Loss()
 	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 	model = EAST()
-	model.load_state_dict(torch.load(os.path.join(os.getcwd(),'east.pt'),weights_only=False,map_location=device))
+	model.load_state_dict(torch.load(os.path.join(os.getcwd(),'east.pth'),weights_only=False,map_location=device))
 	data_parallel = False
 	if torch.cuda.device_count() > 1:
 		model = nn.DataParallel(model)
@@ -49,7 +49,7 @@ def train(metadata,vocab,char_to_int,int_to_char, pths_path, batch_size, lr, epo
 		display(gt_geo.permute(1,0,2,3))
 		display(pred_geo.permute(1,0,2,3))
 		print('epoch_loss is {:.8f}, epoch_time is {:.8f}, lr is {}'.format(epoch_loss.item(), time.time()-epoch_time,scheduler.get_last_lr()[0]))
-	torch.save(model.state_dict(),f'east_{str(datetime.now())[:10]}.pt')
+	torch.save(model.state_dict(),f'east_{str(datetime.now())[:10]}.pth')
 
 
 if __name__ == '__main__':
