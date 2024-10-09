@@ -14,7 +14,7 @@ import numpy as np
 from tqdm import tqdm
 
 
-def train(metadata,vocab,char_to_int,int_to_char, pths_path, batch_size, lr, epoch_iter, interval):
+def train(metadata,vocab,char_to_int,int_to_char, batch_size, lr, epoch_iter, interval):
 	trainset = custom_dataset(metadata,0.25)
 	train_loader = DataLoader(trainset, batch_size=batch_size, \
                                    		shuffle=True, drop_last=True)
@@ -29,7 +29,7 @@ def train(metadata,vocab,char_to_int,int_to_char, pths_path, batch_size, lr, epo
 		data_parallel = True
 	model.to(device)
 	optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-	scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[epoch_iter//2], gamma=0.1)
+	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.5, patience=1)
 
 	for epoch in range(epoch_iter):
 		model.train()
@@ -48,16 +48,17 @@ def train(metadata,vocab,char_to_int,int_to_char, pths_path, batch_size, lr, epo
 		scheduler.step(epoch_loss)
 		display(gt_geo.permute(1,0,2,3))
 		display(pred_geo.permute(1,0,2,3))
+		if epoch%10:
+			torch.save(model.state_dict(),f'east_{str(datetime.now())[:10]}.pth')
 		print('epoch_loss is {:.8f}, epoch_time is {:.8f}, lr is {}'.format(epoch_loss.item(), time.time()-epoch_time,scheduler.get_last_lr()[0]))
 	torch.save(model.state_dict(),f'east_{str(datetime.now())[:10]}.pth')
 
 
 if __name__ == '__main__':
 	metadata,vocab,char_to_int,int_to_char=get_metadata()
-	pths_path      = './pths'
 	batch_size     = 1 
 	lr             = 1e-3
 	epoch_iter     = 600
 	save_interval  = 5
-	train(metadata,vocab,char_to_int,int_to_char, pths_path, batch_size, lr, epoch_iter, save_interval)	
+	train(metadata,vocab,char_to_int,int_to_char, batch_size, lr, epoch_iter, save_interval)	
 	

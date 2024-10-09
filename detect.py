@@ -225,9 +225,9 @@ img_path    = "C:/Users/tirth/Desktop/manga_text_ocr-main/ie-wo-oidasaremashita-
 res_img     = './res.bmp'
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model = EAST()
-model.load_state_dict(torch.load(os.path.join(os.getcwd(),'east.pth'),weights_only=False,map_location=device))
+model.load_state_dict(torch.load(os.path.join(os.getcwd(),'east_2024-10-09.pth'),weights_only=False,map_location=device))
 model.eval().to(device)
-img = Image.open(img_path)
+img = Image.open(img_path).resize((1024,1024))
 
 boxes = detect(img, model, device)
 plot_img = plot_boxes(img, boxes)
