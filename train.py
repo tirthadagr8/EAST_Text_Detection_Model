@@ -14,7 +14,7 @@ import numpy as np
 from tqdm import tqdm
 
 
-def train(metadata,vocab,char_to_int,int_to_char, batch_size, lr, epoch_iter, interval):
+def train(metadata, batch_size, lr, epoch_iter, interval):
 	trainset = custom_dataset(metadata,0.25)
 	train_loader = DataLoader(trainset, batch_size=batch_size, \
                                    		shuffle=True, drop_last=True)
@@ -22,12 +22,13 @@ def train(metadata,vocab,char_to_int,int_to_char, batch_size, lr, epoch_iter, in
 	criterion = Loss()
 	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 	model = EAST()
-	model.load_state_dict(torch.load(os.path.join(os.getcwd(),'east.pth'),weights_only=False,map_location=device))
+	model.load_state_dict(torch.load(os.path.join(os.getcwd(),'east_2024-10-19_finetune_ndlocr_on_private.pth'),weights_only=False,map_location=device))
 	data_parallel = False
 	if torch.cuda.device_count() > 1:
 		model = nn.DataParallel(model)
 		data_parallel = True
 	model.to(device)
+	scaler = torch.amp.GradScaler('cuda',enabled=True)
 	optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.5, patience=1)
 
@@ -51,14 +52,15 @@ def train(metadata,vocab,char_to_int,int_to_char, batch_size, lr, epoch_iter, in
 		if epoch%10:
 			torch.save(model.state_dict(),f'east_{str(datetime.now())[:10]}.pth')
 		print('epoch_loss is {:.8f}, epoch_time is {:.8f}, lr is {}'.format(epoch_loss.item(), time.time()-epoch_time,scheduler.get_last_lr()[0]))
+		torch.save(model.state_dict(),f'east_{str(datetime.now())[:10]}.pth')
 	torch.save(model.state_dict(),f'east_{str(datetime.now())[:10]}.pth')
 
 
 if __name__ == '__main__':
-	metadata,vocab,char_to_int,int_to_char=get_metadata()
+	metadata=get_metadata()
 	batch_size     = 1 
 	lr             = 1e-3
-	epoch_iter     = 600
+	epoch_iter     = 2
 	save_interval  = 5
-	train(metadata,vocab,char_to_int,int_to_char, batch_size, lr, epoch_iter, save_interval)	
+	train(metadata,batch_size, lr, epoch_iter, save_interval)	
 	

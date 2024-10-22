@@ -169,11 +169,12 @@ class EAST(nn.Module):
         return self.output(self.merge(self.extractor(x)))
 
 
-model = EAST()
-model.load_state_dict(torch.load(os.path.join(os.getcwd(),'east.pth'),weights_only=False,map_location=device))
-model.eval().to(device)
-with torch.no_grad():
-    x = torch.randn(1, 3, 1024, 1024).to(device)
-    score, geo = model(x)
-    print(score.shape)
-    print(geo.shape)
+if __name__=='__main__':
+    model = EAST()
+    model.load_state_dict(torch.load(os.path.join(os.getcwd(),'east.pth'),weights_only=False,map_location=device))
+    model.eval().to(device)
+    with torch.no_grad():
+        x = torch.randn(1, 3, 1024, 1024).to(device)
+        score, geo = model(x)
+        print(score.shape)
+        print(geo.shape)

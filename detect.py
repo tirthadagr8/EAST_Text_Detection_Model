@@ -1,9 +1,11 @@
 import torch
 from torchvision import transforms
 from PIL import Image, ImageDraw
+import matplotlib.pyplot as plt
 import os
 import numpy as np
 # import lanms
+from datetime import datetime
 from dataset import get_rotate_mat
 from model import EAST
 
@@ -119,7 +121,7 @@ def restore_polys(valid_pos, valid_geo, score_shape, scale=4):
     return np.array(polys), index
 
 
-def get_boxes(score, geo, score_thresh=0.4, nms_thresh=0.2):
+def get_boxes(score, geo, score_thresh=0.8, nms_thresh=0.05):
     '''get boxes from feature map
     Input:
         score       : score map from model <numpy.ndarray, (1,row,col)>
@@ -192,11 +194,25 @@ def plot_boxes(img, boxes):
     '''
     if boxes is None:
         return img
-
-    draw = ImageDraw.Draw(img)
+    name=1
+    if not os.path.exists(os.path.join(os.getcwd(),'saved_cropped')):
+        os.mkdir(os.path.join(os.getcwd(),'saved_cropped'))
+    path=os.path.join(os.getcwd(),'saved_cropped')
+    temp=img.copy()
+    draw = ImageDraw.Draw(temp)
+    # print(boxes)
     for box in boxes:
+        img_name=str(name).zfill(4)+'.jpg'
+        # plt.imshow(img.crop([box[0],box[1],box[4],box[5]]))
+        # plt.show()
+        try:
+            img.crop([box[0],box[1],box[4],box[5]]).save(os.path.join(path,img_name))
+        except Exception as e:
+            print(e)
         draw.polygon([box[0], box[1], box[2], box[3], box[4], box[5], box[6], box[7]], outline=(0,255,0),width=3)
-    return img
+        name+=1
+    temp.save(os.path.join(path,'ground_truth.jpg'))
+    return temp
 
 
 def detect_dataset(model, device, test_img_path, submit_path):
@@ -221,11 +237,11 @@ def detect_dataset(model, device, test_img_path, submit_path):
 
 # !wget 'https://cdn.kumacdn.club/wp-content/uploads/K/Kurameru Kagari/Chapter 05/01.jpg'
 
-img_path    = "C:/Users/tirth/Desktop/manga_text_ocr-main/ie-wo-oidasaremashita-ga-genki-ni-kurashiteimasu-cheat-na-mahou-to-zense-chishiki-de-kaiteki-benri-na-second-life/Chapter 6/66666666666666666666666.png"
+img_path    = "C:/Users/tirth/Desktop/manga_text_ocr-main/ie-wo-oidasaremashita-ga-genki-ni-kurashiteimasu-cheat-na-mahou-to-zense-chishiki-de-kaiteki-benri-na-second-life/Chapter 1/1.png"
 res_img     = './res.bmp'
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model = EAST()
-model.load_state_dict(torch.load(os.path.join(os.getcwd(),'east_2024-10-09.pth'),weights_only=False,map_location=device))
+model.load_state_dict(torch.load(os.path.join(os.getcwd(),'east_'+str(datetime.now())[:10]+'.pth'),weights_only=False,map_location=device))
 model.eval().to(device)
 img = Image.open(img_path).resize((1024,1024))
 
