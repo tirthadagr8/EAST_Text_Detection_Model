@@ -4,10 +4,19 @@ from PIL import Image, ImageDraw
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+import math
 # import lanms
 from datetime import datetime
-from dataset import get_rotate_mat
+# from dataset import get_rotate_mat
 from model import EAST
+# from manga_ocr import MangaOcr
+import sys
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
+def get_rotate_mat(theta):
+    '''positive theta value means rotate clockwise'''
+    return np.array([[math.cos(theta), -math.sin(theta)], [math.sin(theta), math.cos(theta)]])
 
 def non_max_suppression_np(boxes, scores, iou_threshold=0.2):
     """NMS implementation for numpy arrays."""
@@ -199,6 +208,7 @@ def plot_boxes(img, boxes):
         os.mkdir(os.path.join(os.getcwd(),'saved_cropped'))
     path=os.path.join(os.getcwd(),'saved_cropped')
     temp=img.copy()
+    cropped_images=[]
     draw = ImageDraw.Draw(temp)
     # print(boxes)
     for box in boxes:
@@ -206,13 +216,15 @@ def plot_boxes(img, boxes):
         # plt.imshow(img.crop([box[0],box[1],box[4],box[5]]))
         # plt.show()
         try:
-            img.crop([box[0],box[1],box[4],box[5]]).save(os.path.join(path,img_name))
+            cropped_img=img.crop([box[0],box[1],box[4],box[5]])
+            cropped_images.append(cropped_img)
+            cropped_img.save(os.path.join(path,img_name))
         except Exception as e:
             print(e)
         draw.polygon([box[0], box[1], box[2], box[3], box[4], box[5], box[6], box[7]], outline=(0,255,0),width=3)
         name+=1
-    temp.save(os.path.join(path,'ground_truth.jpg'))
-    return temp
+    # temp.save(os.path.join(path,'ground_truth.jpg'))
+    return temp,cropped_images
 
 
 def detect_dataset(model, device, test_img_path, submit_path):
@@ -236,15 +248,24 @@ def detect_dataset(model, device, test_img_path, submit_path):
             f.writelines(seq)
 
 # !wget 'https://cdn.kumacdn.club/wp-content/uploads/K/Kurameru Kagari/Chapter 05/01.jpg'
+class EastModel:
+    def __init__(self):
+        super(EastModel).__init__()
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.model=EAST()
+        self.model.load_state_dict(torch.load(os.path.join(os.getcwd(),'east_2024-11-04.pth'),weights_only=False,map_location=self.device))
 
-img_path    = "C:/Users/tirth/Desktop/manga_text_ocr-main/ie-wo-oidasaremashita-ga-genki-ni-kurashiteimasu-cheat-na-mahou-to-zense-chishiki-de-kaiteki-benri-na-second-life/Chapter 1/1.png"
-res_img     = './res.bmp'
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-model = EAST()
-model.load_state_dict(torch.load(os.path.join(os.getcwd(),'east_'+str(datetime.now())[:10]+'.pth'),weights_only=False,map_location=device))
-model.eval().to(device)
-img = Image.open(img_path).resize((1024,1024))
+    def detect(self,img_path):
+        res_img     = './res.bmp'
+        self.model.eval().to(self.device)
+        img = Image.open(img_path).resize((1024,1024))
 
-boxes = detect(img, model, device)
-plot_img = plot_boxes(img, boxes)
-plot_img.save(res_img)
+        boxes = detect(img, self.model, self.device)
+        plot_img,cropped_images = plot_boxes(img, boxes)
+        # for cropped_img in cropped_images:
+        #     print(mocr(cropped_img),flush=True)
+        #     plt.imshow(cropped_img)
+        #     plt.show()
+
+model=EastModel()
+model.detect("C:/Users/tirth/Desktop/manga_text_ocr-main/Atama wa Katai ga Nyotai wa Yawaraka Ganbare TS Iinchou/0010.jpg")
